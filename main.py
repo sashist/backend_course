@@ -32,8 +32,8 @@ def delete_hotel(hotels_id: int):
 
 @app.post('/hotels')
 def create_hotel(
-        title: str = Body(embed=True, description="Название города")
-        title: str = Body(embed=True, description="Название отеля")
+        title: str = Body(embed=True, description="Название города"),
+        name: str = Body(embed=True, description="Название отеля")
 ):
     hotels.append(
         {'id': hotels[-1]['id'] + 1,
