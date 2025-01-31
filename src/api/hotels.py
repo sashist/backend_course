@@ -1,5 +1,7 @@
-from fastapi import Query, APIRouter
-from schemas.hotels import Hotel, HotelPUTCH
+from fastapi import Query, APIRouter, Body
+
+from src.schemas.hotels import Hotel, HotelPATCH
+from src.api.dependecies import PaginationDep
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -16,10 +18,9 @@ hotels = [
 
 @router.get("")
 def get_hotels(
+        pagination: PaginationDep,
         id: int | None = Query(None, description="Айдишник"),
         title: str | None = Query(None, description="Название отеля"),
-        page: int = Query(default=1),
-        per_page: int = Query(default=1)
 ):
     hotels_ = []
     for hotel in hotels:
@@ -28,12 +29,30 @@ def get_hotels(
         if title and hotel["title"] != title:
             continue
         hotels_.append(hotel)
-    offset = (page - 1) * per_page
-    return hotels_[offset:offset + per_page]
+
+    if pagination.page and pagination.per_page:
+        return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
+    return hotels_
 
 
 @router.post("")
-def create_hotel(hotel_data: Hotel):
+def create_hotel(hotel_data: Hotel = Body(openapi_examples={
+    "1": {
+        "summary": "Сочи",
+        "value": {
+            "title": "Отель Сочи 5 звезд у моря",
+            "name": "sochi_u_morya",
+        }
+    },
+    "2": {
+        "summary": "Дубай",
+        "value": {
+            "title": "Отель Дубай У фонтана",
+            "name": "dubai_fountain",
+        }
+    }
+})
+):
     global hotels
     hotels.append({
         "id": hotels[-1]["id"] + 1,
@@ -57,7 +76,10 @@ def edit_hotel(hotel_id: int, hotel_data: Hotel):
     summary="Частичное обновление данных об отеле",
     description="<h1>Тут мы частично обновляем данные об отеле: можно отправить name, а можно title</h1>",
 )
-def partially_edit_hotel(hotel_id: int, hotel_data: HotelPUTCH):
+def partially_edit_hotel(
+        hotel_id: int,
+        hotel_data: HotelPATCH,
+):
     global hotels
     hotel = [hotel for hotel in hotels if hotel["id"] == hotel_id][0]
     if hotel_data.title:
