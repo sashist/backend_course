@@ -23,6 +23,6 @@ class BaseRepository:
 
     async def add(self, hotel_data):
         add_hotel_stmt = insert(self.model).values(**hotel_data.model_dump())
-        result =  self.session.execute(add_hotel_stmt)
+        result = await self.session.execute(add_hotel_stmt)
         await self.session.commit()
         return result
