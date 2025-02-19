@@ -46,7 +46,10 @@ async def get_hotels(
     #     return hotels_[pagination.per_page * (pagination.page - 1):][:pagination.per_page]
     # return hotels_
 
-
+@router.get("/{hotel_id}")
+async def get_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        return await HotelsRepository(session).get_one_or_none(id=hotel_id)
 @router.post("")
 async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
     "1": {
@@ -69,11 +72,7 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
         hotel = await HotelsRepository(session).add(hotel_data)
         await session.commit()
     return {"status": "OK", "data": hotel}
-    # async with async_session_maker() as session:
-    #     add_hotel_stmt = insert(HotelsORM).values(**hotel_data.model_dump())
-    #     await session.execute(add_hotel_stmt)
-    #     await session.commit()
-    # return {"status": "OK"}
+
 
 
 @router.put("/{hotel_id}")
@@ -89,16 +88,13 @@ async def edit_hotel(hotel_id: int, hotel_data: Hotel):
     summary="Частичное обновление данных об отеле",
     description="<h1>Тут мы частично обновляем данные об отеле: можно отправить name, а можно title</h1>",
 )
-def partially_edit_hotel(
+async def partially_edit_hotel(
         hotel_id: int,
         hotel_data: HotelPATCH,
 ):
-    global hotels
-    hotel = [hotel for hotel in hotels if hotel["id"] == hotel_id][0]
-    if hotel_data.title:
-        hotel["title"] = hotel_data.title
-    if hotel_data.name:
-        hotel["name"] = hotel_data.name
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit(hotel_data, exclude_unset=True, id=hotel_id)
+        await  session.commit()
     return {"status": "OK"}
 
 
