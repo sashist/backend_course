@@ -1,10 +1,6 @@
-from datetime import datetime, timezone, timedelta
-from multiprocessing.resource_tracker import register
-from warnings import deprecated
+from fastapi import APIRouter, HTTPException, Response
 
-from fastapi import APIRouter, HTTPException, Response, Request
-
-from src.config import settings
+from src.api.dependecies import UserIdDep
 from src.repos.users import UsersRepository
 from src.database import async_session_maker
 from src.schemas.users import UserRequestAdd, UserAdd
@@ -42,9 +38,16 @@ async def login_user(
         return {"access_token": access_token}
 
 
-@router.get("/only_auth")
-async def only_auth(
-        request: Request,
+@router.get("/me")
+async def get_me(
+        user_id: UserIdDep,
 ):
-    result = request.cookies if request.cookies else None
-    return {"result": result}
+    async with async_session_maker() as session:
+        user = await UsersRepository(session).get_one_or_none(id=user_id)
+        return user
+@router.post("/logout")
+async def logout(
+        response: Response
+):
+    response.delete_cookie(key="access_token")
+    return {"status": "OK"}
